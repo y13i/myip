@@ -1,0 +1,129 @@
+Transform:
+  - AWS::Serverless-2016-10-31
+Parameters:
+  DomainName:
+    Type: String
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+  AcmCertificateArn:
+    Type: String
+Resources:
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - edgelambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+  Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/main.handler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 1
+      Role:
+        Fn::GetAtt:
+          - Role
+          - Arn
+      AutoPublishAlias: Main
+  Distribution6:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Origins:
+          - DomainName:
+              Ref: DomainName
+            Id: origin
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: match-viewer
+        DefaultCacheBehavior:
+          TargetOriginId: origin
+          ViewerProtocolPolicy: allow-all
+          ForwardedValues:
+            QueryString: false
+          LambdaFunctionAssociations:
+            - EventType: viewer-request
+              LambdaFunctionARN:
+                Fn::Sub: "${Function.Version}"
+        IPV6Enabled: true
+        ViewerCertificate:
+          AcmCertificateArn:
+            Ref: AcmCertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2019
+        Aliases:
+          - Fn::Sub: "myip.${DomainName}"
+  Distribution4:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Origins:
+          - DomainName: y13i.com
+            Id: origin
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: match-viewer
+        DefaultCacheBehavior:
+          TargetOriginId: origin
+          ViewerProtocolPolicy: allow-all
+          ForwardedValues:
+            QueryString: false
+          LambdaFunctionAssociations:
+            - EventType: viewer-request
+              LambdaFunctionARN:
+                Fn::Sub: "${Function.Version}"
+        IPV6Enabled: false
+        ViewerCertificate:
+          AcmCertificateArn:
+            Ref: AcmCertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2019
+        Aliases:
+          - Fn::Sub: "myip4.${DomainName}"
+  AppRecordSetGroup:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId:
+        Ref: HostedZoneId
+      RecordSets:
+        - Name:
+            Fn::Sub: "myip.${DomainName}"
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName:
+              Fn::GetAtt:
+                - Distribution6
+                - DomainName
+        - Name:
+            Fn::Sub: "myip.${DomainName}"
+          Type: AAAA
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName:
+              Fn::GetAtt:
+                - Distribution6
+                - DomainName
+        - Name:
+            Fn::Sub: "myip4.${DomainName}"
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName:
+              Fn::GetAtt:
+                - Distribution4
+                - DomainName
