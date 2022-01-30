@@ -40,6 +40,8 @@ Resources:
     Properties:
       DistributionConfig:
         Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: true
         Origins:
           - DomainName:
               Ref: DomainName
@@ -53,11 +55,18 @@ Resources:
           ViewerProtocolPolicy: allow-all
           ForwardedValues:
             QueryString: false
+            Headers:
+              - Access-Control-Request-Headers
+              - Access-Control-Request-Method
+              - Origin
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
           LambdaFunctionAssociations:
             - EventType: viewer-request
               LambdaFunctionARN:
                 Fn::Sub: "${Function.Version}"
-        IPV6Enabled: true
         ViewerCertificate:
           AcmCertificateArn:
             Ref: AcmCertificateArn
@@ -70,6 +79,8 @@ Resources:
     Properties:
       DistributionConfig:
         Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: false
         Origins:
           - DomainName: y13i.com
             Id: origin
@@ -82,11 +93,18 @@ Resources:
           ViewerProtocolPolicy: allow-all
           ForwardedValues:
             QueryString: false
+            Headers:
+              - Access-Control-Request-Headers
+              - Access-Control-Request-Method
+              - Origin
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
           LambdaFunctionAssociations:
             - EventType: viewer-request
               LambdaFunctionARN:
                 Fn::Sub: "${Function.Version}"
-        IPV6Enabled: false
         ViewerCertificate:
           AcmCertificateArn:
             Ref: AcmCertificateArn

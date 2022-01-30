@@ -1,3 +1,5 @@
 {
-  "private": true
+  "private": true,
+  "name": "myip",
+  "version": "0.0.1"
 }
